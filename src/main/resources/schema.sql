@@ -1,10 +1,3 @@
--- Run this file connected to any existing database (e.g. the server's default
--- "postgres" db) as a superuser. It creates the bankofcli role + database if
--- they don't already exist, switches into that database, then creates tables.
---
--- Example (Docker):
---   docker exec -i <container> psql -U <superuser> -d postgres -v ON_ERROR_STOP=1 < schema.sql
-
 DO
 $$
 BEGIN
@@ -23,7 +16,7 @@ SET ROLE bankofcli;
 
 CREATE TABLE IF NOT EXISTS accounts (
     account_id      BIGSERIAL PRIMARY KEY,
-    pin_hash        VARCHAR(255) NOT NULL,
+    pin             VARCHAR(255) NOT NULL,
     balance         NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
     created_at      TIMESTAMP NOT NULL DEFAULT NOW()
 );
