@@ -2,7 +2,6 @@ package com.bankofcli.persistence;
 
 import com.bankofcli.domain.Account;
 import com.bankofcli.exception.DataAccessException;
-import com.bankofcli.util.ConnectionManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +21,7 @@ class AccountDAOImplTest {
 
     @AfterEach
     void cleanUp() throws SQLException {
-        try (Connection conn = ConnectionManager.getConnection();
+        try (Connection conn = ConnectionFactory.getConnectionFactory().getConnection();
              PreparedStatement stmt = conn.prepareStatement("DELETE FROM accounts WHERE account_id = ?")) {
             for (Long id : createdAccountIds) {
                 stmt.setLong(1, id);

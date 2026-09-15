@@ -4,7 +4,6 @@ import com.bankofcli.domain.Account;
 import com.bankofcli.domain.Transaction;
 import com.bankofcli.domain.TransactionType;
 import com.bankofcli.exception.DataAccessException;
-import com.bankofcli.util.ConnectionManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +29,7 @@ class TransactionDAOImplTest {
 
     @AfterEach
     void cleanUp() throws SQLException {
-        try (Connection conn = ConnectionManager.getConnection()) {
+        try (Connection conn = ConnectionFactory.getConnectionFactory().getConnection()) {
             try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM transactions WHERE account_id = ?")) {
                 stmt.setLong(1, testAccount.getAccountId());
                 stmt.executeUpdate();

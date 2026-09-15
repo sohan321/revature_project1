@@ -3,7 +3,6 @@ package com.bankofcli.persistence;
 import com.bankofcli.domain.Transaction;
 import com.bankofcli.domain.TransactionType;
 import com.bankofcli.exception.DataAccessException;
-import com.bankofcli.util.ConnectionManager;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -11,72 +10,94 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class TransactionDAOImpl implements TransactionDAO {
 
+    private static final String CREATE_TABLE_SQL = """
+            CREATE TABLE IF NOT EXISTS transactions (
+                transaction_id BIGSERIAL PRIMARY KEY,
+                account_id BIGINT NOT NULL REFERENCES accounts(account_id),
+                type VARCHAR(20) NOT NULL,
+                amount NUMERIC(12, 2) NOT NULL,
+                related_account_id BIGINT REFERENCES accounts(account_id),
+                created_at TIMESTAMP NOT NULL DEFAULT NOW()
+            )
+            """;
+    private static final String INSERT_SQL = "INSERT INTO transactions (account_id, type, amount, related_account_id) " + "VALUES (?, ?, ?, ?) RETURNING transaction_id, created_at";
+    private static final String FIND_BY_ACCOUNT_ID_SQL = "SELECT transaction_id, account_id, type, amount, " + "related_account_id, created_at FROM transactions WHERE account_id = ? ORDER BY created_at DESC";
+
+    public TransactionDAOImpl() {
+        initializeSchema();
+    }
+
     @Override
     public Transaction createTransaction(long accountId, TransactionType type, BigDecimal amount, Long relatedAccountId) {
-        String sql = "INSERT INTO transactions (account_id, type, amount, related_account_id) "
-                + "VALUES (?, ?, ?, ?) RETURNING transaction_id, created_at";
-
-        try (Connection conn = ConnectionManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setLong(1, accountId);
-            stmt.setString(2, type.name());
-            stmt.setBigDecimal(3, amount);
+        try (Connection connection = ConnectionFactory.getConnectionFactory().getConnection();
+                PreparedStatement statement = connection.prepareStatement(INSERT_SQL)) {
+            statement.setLong(1, accountId);
+            statement.setString(2, type.name());
+            statement.setBigDecimal(3, amount);
             if (relatedAccountId == null) {
-                stmt.setNull(4, Types.BIGINT);
+                statement.setNull(4, Types.BIGINT);
             } else {
-                stmt.setLong(4, relatedAccountId);
+                statement.setLong(4, relatedAccountId);
             }
 
-            ResultSet rs = stmt.executeQuery();
-            rs.next();
-
-            long transactionId = rs.getLong("transaction_id");
-            LocalDateTime createdAt = rs.getTimestamp("created_at").toLocalDateTime();
-
-            return new Transaction(transactionId, accountId, type, amount, relatedAccountId, createdAt);
-
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                long transactionId = resultSet.getLong("transaction_id");
+                var createdAt = resultSet.getTimestamp("created_at").toLocalDateTime();
+                return new Transaction(transactionId, accountId, type, amount, relatedAccountId, createdAt);
+            }
         } catch (SQLException e) {
-            throw new DataAccessException("Failed to create transaction", e);
+            throw databaseError("Could not create transaction", e);
         }
     }
 
     @Override
     public List<Transaction> getTransactionsByAccountId(long accountId) {
-        String sql = "SELECT transaction_id, account_id, type, amount, related_account_id, created_at "
-                + "FROM transactions WHERE account_id = ? ORDER BY created_at DESC";
+        List<Transaction> transactions = new ArrayList<>();
 
-        try (Connection conn = ConnectionManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection connection = ConnectionFactory.getConnectionFactory().getConnection();
+                PreparedStatement statement = connection.prepareStatement(FIND_BY_ACCOUNT_ID_SQL)) {
+            statement.setLong(1, accountId);
 
-            stmt.setLong(1, accountId);
-
-            ResultSet rs = stmt.executeQuery();
-            List<Transaction> transactions = new ArrayList<>();
-
-            while (rs.next()) {
-                long relatedAccountId = rs.getLong("related_account_id");
-                Long relatedAccountIdOrNull = rs.wasNull() ? null : relatedAccountId;
-
-                transactions.add(new Transaction(
-                        rs.getLong("transaction_id"),
-                        rs.getLong("account_id"),
-                        TransactionType.valueOf(rs.getString("type")),
-                        rs.getBigDecimal("amount"),
-                        relatedAccountIdOrNull,
-                        rs.getTimestamp("created_at").toLocalDateTime()));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    transactions.add(mapTransaction(resultSet));
+                }
             }
-
             return transactions;
-
         } catch (SQLException e) {
-            throw new DataAccessException("Failed to fetch transactions for account " + accountId, e);
+            throw databaseError("Could not list transactions", e);
         }
+    }
+
+    private void initializeSchema() {
+        try (Connection connection = ConnectionFactory.getConnectionFactory().getConnection();
+                PreparedStatement statement = connection.prepareStatement(CREATE_TABLE_SQL)) {
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw databaseError("Could not initialize transactions table", e);
+        }
+    }
+
+    private Transaction mapTransaction(ResultSet resultSet) throws SQLException {
+        long relatedAccountId = resultSet.getLong("related_account_id");
+        Long relatedAccountIdOrNull = resultSet.wasNull() ? null : relatedAccountId;
+
+        return new Transaction(
+                resultSet.getLong("transaction_id"),
+                resultSet.getLong("account_id"),
+                TransactionType.valueOf(resultSet.getString("type")),
+                resultSet.getBigDecimal("amount"),
+                relatedAccountIdOrNull,
+                resultSet.getTimestamp("created_at").toLocalDateTime());
+    }
+
+    private DataAccessException databaseError(String message, SQLException cause) {
+        return new DataAccessException(message, cause);
     }
 }
