@@ -1,4 +1,4 @@
-package com.bankofcli.model;
+package com.bankofcli.domain;
 
 import java.math.BigDecimal;
 
@@ -18,16 +18,8 @@ public class Account {
         return accountId;
     }
 
-    public void setAccountId(long accountId) {
-        this.accountId = accountId;
-    }
-
     public String getPin() {
         return pin;
-    }
-
-    public void setPin(String pin) {
-        this.pin = pin;
     }
 
     public BigDecimal getBalance() {

@@ -1,4 +1,4 @@
-package com.bankofcli.model;
+package com.bankofcli.domain;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,47 +25,23 @@ public class Transaction {
         return transactionId;
     }
 
-    public void setTransactionId(long transactionId) {
-        this.transactionId = transactionId;
-    }
-
     public long getAccountId() {
         return accountId;
-    }
-
-    public void setAccountId(long accountId) {
-        this.accountId = accountId;
     }
 
     public TransactionType getType() {
         return type;
     }
 
-    public void setType(TransactionType type) {
-        this.type = type;
-    }
-
     public BigDecimal getAmount() {
         return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
     }
 
     public Long getRelatedAccountId() {
         return relatedAccountId;
     }
 
-    public void setRelatedAccountId(Long relatedAccountId) {
-        this.relatedAccountId = relatedAccountId;
-    }
-
     public LocalDateTime getCreatedAt() {
         return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
 }

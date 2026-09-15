@@ -1,4 +1,4 @@
-package com.bankofcli.model;
+package com.bankofcli.domain;
 
 public enum TransactionType {
     DEPOSIT,
