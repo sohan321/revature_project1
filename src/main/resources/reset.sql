@@ -1,0 +1,1 @@
+TRUNCATE transaction, account RESTART IDENTITY CASCADE;

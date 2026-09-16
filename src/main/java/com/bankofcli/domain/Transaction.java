@@ -10,15 +10,15 @@ public class Transaction {
     private TransactionType type;
     private BigDecimal amount;
     private Long relatedAccountId;
-    private LocalDateTime createdAt;
+    private LocalDateTime timestamp;
 
-    public Transaction(long transactionId, long accountId, TransactionType type, BigDecimal amount, Long relatedAccountId, LocalDateTime createdAt) {
+    public Transaction(long transactionId, long accountId, TransactionType type, BigDecimal amount, Long relatedAccountId, LocalDateTime timestamp) {
         this.transactionId = transactionId;
         this.accountId = accountId;
         this.type = type;
         this.amount = amount;
         this.relatedAccountId = relatedAccountId;
-        this.createdAt = createdAt;
+        this.timestamp = timestamp;
     }
 
     public long getTransactionId() {
@@ -41,7 +41,7 @@ public class Transaction {
         return relatedAccountId;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public LocalDateTime getTimestamp() {
+        return timestamp;
     }
 }

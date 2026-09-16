@@ -12,15 +12,16 @@ import java.sql.SQLException;
 public class AccountDAOImpl implements AccountDAO {
 
     private static final String CREATE_TABLE_SQL = """
-            CREATE TABLE IF NOT EXISTS accounts (
-                account_id BIGSERIAL PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS account (
+                account_id SERIAL PRIMARY KEY,
                 pin VARCHAR(255) NOT NULL,
                 balance NUMERIC(12, 2) NOT NULL DEFAULT 0.00
             )
             """;
-    private static final String INSERT_SQL = "INSERT INTO accounts (pin, balance) VALUES (?, ?) RETURNING account_id";
-    private static final String FIND_BY_ID_SQL = "SELECT account_id, pin, balance FROM accounts WHERE account_id = ?";
-    private static final String UPDATE_BALANCE_SQL = "UPDATE accounts SET balance = ? WHERE account_id = ?";
+    private static final String INSERT_SQL = "INSERT INTO account (pin, balance) VALUES (?, ?) RETURNING account_id";
+    private static final String FIND_BY_ID_SQL = "SELECT account_id, pin, balance FROM account WHERE account_id = ?";
+    private static final String DEPOSIT_SQL = "UPDATE account SET balance = balance + ? WHERE account_id = ?";
+    private static final String WITHDRAW_SQL = "UPDATE account SET balance = balance - ? WHERE account_id = ? AND balance >= ?";
 
     public AccountDAOImpl() {
         initializeSchema();
@@ -60,14 +61,44 @@ public class AccountDAOImpl implements AccountDAO {
     }
 
     @Override
-    public void updateBalance(long accountId, BigDecimal newBalance) {
-        try (Connection connection = ConnectionFactory.getConnectionFactory().getConnection();
-                PreparedStatement statement = connection.prepareStatement(UPDATE_BALANCE_SQL)) {
-            statement.setBigDecimal(1, newBalance);
+    public void depositFunds(long accountId, BigDecimal amount) {
+        try (Connection connection = ConnectionFactory.getConnectionFactory().getConnection()) {
+            depositFunds(connection, accountId, amount);
+        } catch (SQLException e) {
+            throw databaseError("Could not deposit funds", e);
+        }
+    }
+
+    @Override
+    public void depositFunds(Connection connection, long accountId, BigDecimal amount) {
+        try (PreparedStatement statement = connection.prepareStatement(DEPOSIT_SQL)) {
+            statement.setBigDecimal(1, amount);
             statement.setLong(2, accountId);
             statement.executeUpdate();
         } catch (SQLException e) {
-            throw databaseError("Could not update account balance", e);
+            throw databaseError("Could not deposit funds", e);
+        }
+    }
+
+    @Override
+    public boolean withdrawFunds(long accountId, BigDecimal amount) {
+        try (Connection connection = ConnectionFactory.getConnectionFactory().getConnection()) {
+            return withdrawFunds(connection, accountId, amount);
+        } catch (SQLException e) {
+            throw databaseError("Could not withdraw funds", e);
+        }
+    }
+
+    @Override
+    public boolean withdrawFunds(Connection connection, long accountId, BigDecimal amount) {
+        try (PreparedStatement statement = connection.prepareStatement(WITHDRAW_SQL)) {
+            statement.setBigDecimal(1, amount);
+            statement.setLong(2, accountId);
+            statement.setBigDecimal(3, amount);
+            int rowsAffected = statement.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            throw databaseError("Could not withdraw funds", e);
         }
     }
 

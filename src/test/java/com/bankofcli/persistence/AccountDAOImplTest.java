@@ -22,7 +22,7 @@ class AccountDAOImplTest {
     @AfterEach
     void cleanUp() throws SQLException {
         try (Connection conn = ConnectionFactory.getConnectionFactory().getConnection();
-             PreparedStatement stmt = conn.prepareStatement("DELETE FROM accounts WHERE account_id = ?")) {
+             PreparedStatement stmt = conn.prepareStatement("DELETE FROM account WHERE account_id = ?")) {
             for (Long id : createdAccountIds) {
                 stmt.setLong(1, id);
                 stmt.executeUpdate();
@@ -66,21 +66,45 @@ class AccountDAOImplTest {
     }
 
     @Test
-    void updateBalance_existingAccount_persistsNewBalance() {
-        Account created = accountDAO.createAccount("5555", new BigDecimal("0.00"));
+    void depositFunds_existingAccount_increasesBalance() {
+        Account created = accountDAO.createAccount("5555", new BigDecimal("20.00"));
         createdAccountIds.add(created.getAccountId());
 
-        accountDAO.updateBalance(created.getAccountId(), new BigDecimal("99.99"));
+        accountDAO.depositFunds(created.getAccountId(), new BigDecimal("30.00"));
 
         Account updated = accountDAO.getAccountById(created.getAccountId());
         assertNotNull(updated);
-        assertEquals(0, new BigDecimal("99.99").compareTo(updated.getBalance()));
+        assertEquals(0, new BigDecimal("50.00").compareTo(updated.getBalance()));
     }
 
     @Test
-    void updateBalance_nonExistentAccount_doesNotThrowOrCreateRow() {
-        assertDoesNotThrow(() -> accountDAO.updateBalance(-1L, new BigDecimal("10.00")));
+    void depositFunds_nonExistentAccount_doesNotThrowOrCreateRow() {
+        assertDoesNotThrow(() -> accountDAO.depositFunds(-1L, new BigDecimal("10.00")));
 
         assertNull(accountDAO.getAccountById(-1L));
+    }
+
+    @Test
+    void withdrawFunds_sufficientFunds_decreasesBalanceAndReturnsTrue() {
+        Account created = accountDAO.createAccount("6666", new BigDecimal("100.00"));
+        createdAccountIds.add(created.getAccountId());
+
+        boolean withdrawn = accountDAO.withdrawFunds(created.getAccountId(), new BigDecimal("40.00"));
+
+        assertTrue(withdrawn);
+        Account updated = accountDAO.getAccountById(created.getAccountId());
+        assertEquals(0, new BigDecimal("60.00").compareTo(updated.getBalance()));
+    }
+
+    @Test
+    void withdrawFunds_insufficientFunds_returnsFalseAndLeavesBalanceUnchanged() {
+        Account created = accountDAO.createAccount("7777", new BigDecimal("10.00"));
+        createdAccountIds.add(created.getAccountId());
+
+        boolean withdrawn = accountDAO.withdrawFunds(created.getAccountId(), new BigDecimal("50.00"));
+
+        assertFalse(withdrawn);
+        Account unchanged = accountDAO.getAccountById(created.getAccountId());
+        assertEquals(0, new BigDecimal("10.00").compareTo(unchanged.getBalance()));
     }
 }

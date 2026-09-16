@@ -30,11 +30,11 @@ class TransactionDAOImplTest {
     @AfterEach
     void cleanUp() throws SQLException {
         try (Connection conn = ConnectionFactory.getConnectionFactory().getConnection()) {
-            try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM transactions WHERE account_id = ?")) {
+            try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM transaction WHERE account_id = ?")) {
                 stmt.setLong(1, testAccount.getAccountId());
                 stmt.executeUpdate();
             }
-            try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM accounts WHERE account_id = ?")) {
+            try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM account WHERE account_id = ?")) {
                 stmt.setLong(1, testAccount.getAccountId());
                 stmt.executeUpdate();
             }
@@ -47,7 +47,7 @@ class TransactionDAOImplTest {
                 testAccount.getAccountId(), TransactionType.DEPOSIT, new BigDecimal("25.00"), null);
 
         assertTrue(txn.getTransactionId() > 0);
-        assertNotNull(txn.getCreatedAt());
+        assertNotNull(txn.getTimestamp());
         assertNull(txn.getRelatedAccountId());
         assertEquals(TransactionType.DEPOSIT, txn.getType());
     }
@@ -61,7 +61,7 @@ class TransactionDAOImplTest {
     @Test
     void getTransactionsByAccountId_returnsCreatedTransactions() {
         transactionDAO.createTransaction(testAccount.getAccountId(), TransactionType.DEPOSIT, new BigDecimal("25.00"), null);
-        transactionDAO.createTransaction(testAccount.getAccountId(), TransactionType.WITHDRAW, new BigDecimal("5.00"), null);
+        transactionDAO.createTransaction(testAccount.getAccountId(), TransactionType.WITHDRAWAL, new BigDecimal("5.00"), null);
 
         List<Transaction> history = transactionDAO.getTransactionsByAccountId(testAccount.getAccountId());
 

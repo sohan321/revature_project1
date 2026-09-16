@@ -16,17 +16,17 @@ import java.util.List;
 public class TransactionDAOImpl implements TransactionDAO {
 
     private static final String CREATE_TABLE_SQL = """
-            CREATE TABLE IF NOT EXISTS transactions (
-                transaction_id BIGSERIAL PRIMARY KEY,
-                account_id BIGINT NOT NULL REFERENCES accounts(account_id),
+            CREATE TABLE IF NOT EXISTS transaction (
+                transaction_id SERIAL PRIMARY KEY,
+                account_id INTEGER NOT NULL REFERENCES account(account_id),
                 type VARCHAR(20) NOT NULL,
                 amount NUMERIC(12, 2) NOT NULL,
-                related_account_id BIGINT REFERENCES accounts(account_id),
-                created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                related_account_id INTEGER REFERENCES account(account_id),
+                timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             """;
-    private static final String INSERT_SQL = "INSERT INTO transactions (account_id, type, amount, related_account_id) " + "VALUES (?, ?, ?, ?) RETURNING transaction_id, created_at";
-    private static final String FIND_BY_ACCOUNT_ID_SQL = "SELECT transaction_id, account_id, type, amount, " + "related_account_id, created_at FROM transactions WHERE account_id = ? ORDER BY created_at DESC";
+    private static final String INSERT_SQL = "INSERT INTO transaction (account_id, type, amount, related_account_id) " + "VALUES (?, ?, ?, ?) RETURNING transaction_id, timestamp";
+    private static final String FIND_BY_ACCOUNT_ID_SQL = "SELECT transaction_id, account_id, type, amount, " + "related_account_id, timestamp FROM transaction WHERE account_id = ? ORDER BY timestamp DESC";
 
     public TransactionDAOImpl() {
         initializeSchema();
@@ -34,13 +34,21 @@ public class TransactionDAOImpl implements TransactionDAO {
 
     @Override
     public Transaction createTransaction(long accountId, TransactionType type, BigDecimal amount, Long relatedAccountId) {
-        try (Connection connection = ConnectionFactory.getConnectionFactory().getConnection();
-                PreparedStatement statement = connection.prepareStatement(INSERT_SQL)) {
+        try (Connection connection = ConnectionFactory.getConnectionFactory().getConnection()) {
+            return createTransaction(connection, accountId, type, amount, relatedAccountId);
+        } catch (SQLException e) {
+            throw databaseError("Could not create transaction", e);
+        }
+    }
+
+    @Override
+    public Transaction createTransaction(Connection connection, long accountId, TransactionType type, BigDecimal amount, Long relatedAccountId) {
+        try (PreparedStatement statement = connection.prepareStatement(INSERT_SQL)) {
             statement.setLong(1, accountId);
             statement.setString(2, type.name());
             statement.setBigDecimal(3, amount);
             if (relatedAccountId == null) {
-                statement.setNull(4, Types.BIGINT);
+                statement.setNull(4, Types.INTEGER);
             } else {
                 statement.setLong(4, relatedAccountId);
             }
@@ -48,8 +56,8 @@ public class TransactionDAOImpl implements TransactionDAO {
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 long transactionId = resultSet.getLong("transaction_id");
-                var createdAt = resultSet.getTimestamp("created_at").toLocalDateTime();
-                return new Transaction(transactionId, accountId, type, amount, relatedAccountId, createdAt);
+                var timestamp = resultSet.getTimestamp("timestamp").toLocalDateTime();
+                return new Transaction(transactionId, accountId, type, amount, relatedAccountId, timestamp);
             }
         } catch (SQLException e) {
             throw databaseError("Could not create transaction", e);
@@ -94,7 +102,7 @@ public class TransactionDAOImpl implements TransactionDAO {
                 TransactionType.valueOf(resultSet.getString("type")),
                 resultSet.getBigDecimal("amount"),
                 relatedAccountIdOrNull,
-                resultSet.getTimestamp("created_at").toLocalDateTime());
+                resultSet.getTimestamp("timestamp").toLocalDateTime());
     }
 
     private DataAccessException databaseError(String message, SQLException cause) {
