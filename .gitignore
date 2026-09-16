@@ -9,3 +9,4 @@ target/
 .project
 *.env
 application-local.properties
+db.properties
