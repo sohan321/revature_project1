@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: bankofcli-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bankofcli
+      POSTGRES_USER: bankofcli
+      POSTGRES_PASSWORD: bankofcli
+    ports:
+      - "5432:5432"
+    volumes:
+      - bankofcli-pgdata:/var/lib/postgresql/data
+
+volumes:
+  bankofcli-pgdata:
