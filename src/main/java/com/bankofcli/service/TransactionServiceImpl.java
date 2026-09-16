@@ -26,10 +26,12 @@ public class TransactionServiceImpl implements TransactionService {
 
     private final AccountDAO accountDAO;
     private final TransactionDAO transactionDAO;
+    private final ConnectionFactory connectionFactory;
 
-    public TransactionServiceImpl(AccountDAO accountDAO, TransactionDAO transactionDAO) {
+    public TransactionServiceImpl(AccountDAO accountDAO, TransactionDAO transactionDAO, ConnectionFactory connectionFactory) {
         this.accountDAO = accountDAO;
         this.transactionDAO = transactionDAO;
+        this.connectionFactory = connectionFactory;
     }
 
     @Override
@@ -122,7 +124,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private void executeInTransaction(Consumer<Connection> operation) {
-        try (Connection connection = ConnectionFactory.getConnectionFactory().getConnection()) {
+        try (Connection connection = connectionFactory.getConnection()) {
             try {
                 connection.setAutoCommit(false);
                 operation.accept(connection);

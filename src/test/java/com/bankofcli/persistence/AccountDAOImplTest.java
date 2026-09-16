@@ -109,6 +109,58 @@ class AccountDAOImplTest {
     }
 
     @Test
+    void depositFunds_withConnection_existingAccount_increasesBalance() throws SQLException {
+        Account created = accountDAO.createAccount("8888", new BigDecimal("20.00"));
+        createdAccountIds.add(created.getAccountId());
+
+        try (Connection conn = ConnectionFactory.getConnectionFactory().getConnection()) {
+            accountDAO.depositFunds(conn, created.getAccountId(), new BigDecimal("30.00"));
+        }
+
+        Account updated = accountDAO.getAccountById(created.getAccountId());
+        assertEquals(0, new BigDecimal("50.00").compareTo(updated.getBalance()));
+    }
+
+    @Test
+    void depositFunds_withConnection_nonExistentAccount_doesNotThrowOrCreateRow() throws SQLException {
+        try (Connection conn = ConnectionFactory.getConnectionFactory().getConnection()) {
+            assertDoesNotThrow(() -> accountDAO.depositFunds(conn, -1L, new BigDecimal("10.00")));
+        }
+
+        assertNull(accountDAO.getAccountById(-1L));
+    }
+
+    @Test
+    void withdrawFunds_withConnection_sufficientFunds_decreasesBalanceAndReturnsTrue() throws SQLException {
+        Account created = accountDAO.createAccount("8889", new BigDecimal("100.00"));
+        createdAccountIds.add(created.getAccountId());
+
+        boolean withdrawn;
+        try (Connection conn = ConnectionFactory.getConnectionFactory().getConnection()) {
+            withdrawn = accountDAO.withdrawFunds(conn, created.getAccountId(), new BigDecimal("40.00"));
+        }
+
+        assertTrue(withdrawn);
+        Account updated = accountDAO.getAccountById(created.getAccountId());
+        assertEquals(0, new BigDecimal("60.00").compareTo(updated.getBalance()));
+    }
+
+    @Test
+    void withdrawFunds_withConnection_insufficientFunds_returnsFalseAndLeavesBalanceUnchanged() throws SQLException {
+        Account created = accountDAO.createAccount("8890", new BigDecimal("10.00"));
+        createdAccountIds.add(created.getAccountId());
+
+        boolean withdrawn;
+        try (Connection conn = ConnectionFactory.getConnectionFactory().getConnection()) {
+            withdrawn = accountDAO.withdrawFunds(conn, created.getAccountId(), new BigDecimal("50.00"));
+        }
+
+        assertFalse(withdrawn);
+        Account unchanged = accountDAO.getAccountById(created.getAccountId());
+        assertEquals(0, new BigDecimal("10.00").compareTo(unchanged.getBalance()));
+    }
+
+    @Test
     void updatePin_existingAccount_changesPin() {
         Account created = accountDAO.createAccount("1111", new BigDecimal("0.00"));
         createdAccountIds.add(created.getAccountId());

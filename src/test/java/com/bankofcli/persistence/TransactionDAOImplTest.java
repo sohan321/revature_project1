@@ -59,6 +59,27 @@ class TransactionDAOImplTest {
     }
 
     @Test
+    void createTransaction_withConnection_deposit_savesAndReturnsGeneratedFields() throws SQLException {
+        Transaction txn;
+        try (Connection conn = ConnectionFactory.getConnectionFactory().getConnection()) {
+            txn = transactionDAO.createTransaction(
+                    conn, testAccount.getAccountId(), TransactionType.DEPOSIT, new BigDecimal("25.00"), null);
+        }
+
+        assertTrue(txn.getTransactionId() > 0);
+        assertNotNull(txn.getTimestamp());
+        assertEquals(TransactionType.DEPOSIT, txn.getType());
+    }
+
+    @Test
+    void createTransaction_withConnection_invalidAccountId_throwsDataAccessException() throws SQLException {
+        try (Connection conn = ConnectionFactory.getConnectionFactory().getConnection()) {
+            assertThrows(DataAccessException.class, () -> transactionDAO.createTransaction(
+                    conn, -1L, TransactionType.DEPOSIT, new BigDecimal("10.00"), null));
+        }
+    }
+
+    @Test
     void getTransactionsByAccountId_returnsCreatedTransactions() {
         transactionDAO.createTransaction(testAccount.getAccountId(), TransactionType.DEPOSIT, new BigDecimal("25.00"), null);
         transactionDAO.createTransaction(testAccount.getAccountId(), TransactionType.WITHDRAWAL, new BigDecimal("5.00"), null);

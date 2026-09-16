@@ -2,6 +2,7 @@ package com.bankofcli.api;
 
 import com.bankofcli.persistence.AccountDAO;
 import com.bankofcli.persistence.AccountDAOImpl;
+import com.bankofcli.persistence.ConnectionFactory;
 import com.bankofcli.persistence.TransactionDAO;
 import com.bankofcli.persistence.TransactionDAOImpl;
 import com.bankofcli.service.AccountService;
@@ -16,7 +17,8 @@ public class Main {
         TransactionDAO transactionDAO = new TransactionDAOImpl();
 
         AccountService accountService = new AccountServiceImpl(accountDAO);
-        TransactionService transactionService = new TransactionServiceImpl(accountDAO, transactionDAO);
+        TransactionService transactionService = new TransactionServiceImpl(
+                accountDAO, transactionDAO, ConnectionFactory.getConnectionFactory());
 
         new BankREPL(accountService, transactionService).run();
     }
