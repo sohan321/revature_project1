@@ -11,4 +11,8 @@ public interface AccountService {
     Account login(long accountId, String pin);
 
     BigDecimal getBalance(long accountId);
+
+    void changePin(long accountId, String currentPin, String newPin);
+
+    void deleteAccount(long accountId, String pin);
 }

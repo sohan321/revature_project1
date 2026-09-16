@@ -18,4 +18,8 @@ public interface AccountDAO {
     boolean withdrawFunds(long accountId, BigDecimal amount);
 
     boolean withdrawFunds(Connection connection, long accountId, BigDecimal amount);
+
+    void updatePin(long accountId, String newPin);
+
+    void deleteAccount(long accountId);
 }

@@ -107,4 +107,34 @@ class AccountDAOImplTest {
         Account unchanged = accountDAO.getAccountById(created.getAccountId());
         assertEquals(0, new BigDecimal("10.00").compareTo(unchanged.getBalance()));
     }
+
+    @Test
+    void updatePin_existingAccount_changesPin() {
+        Account created = accountDAO.createAccount("1111", new BigDecimal("0.00"));
+        createdAccountIds.add(created.getAccountId());
+
+        accountDAO.updatePin(created.getAccountId(), "9999");
+
+        Account updated = accountDAO.getAccountById(created.getAccountId());
+        assertEquals("9999", updated.getPin());
+    }
+
+    @Test
+    void updatePin_nonExistentAccount_doesNotThrow() {
+        assertDoesNotThrow(() -> accountDAO.updatePin(-1L, "9999"));
+    }
+
+    @Test
+    void deleteAccount_existingAccount_removesAccount() {
+        Account created = accountDAO.createAccount("2222", new BigDecimal("0.00"));
+
+        accountDAO.deleteAccount(created.getAccountId());
+
+        assertNull(accountDAO.getAccountById(created.getAccountId()));
+    }
+
+    @Test
+    void deleteAccount_nonExistentAccount_doesNotThrow() {
+        assertDoesNotThrow(() -> accountDAO.deleteAccount(-1L));
+    }
 }

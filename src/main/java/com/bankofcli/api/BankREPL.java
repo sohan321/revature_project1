@@ -60,6 +60,7 @@ public class BankREPL {
 
                     1) Register
                     2) Login
+                    3) Help
                     Exit""");
             System.out.println();
         } else {
@@ -71,6 +72,8 @@ public class BankREPL {
                     4) Transfer
                     5) Transaction history
                     6) Logout
+                    7) Change PIN
+                    8) Delete Account
                     Exit""");
             System.out.println();
         }
@@ -81,6 +84,7 @@ public class BankREPL {
             switch (command) {
                 case "1" -> register();
                 case "2" -> login();
+                case "3" -> help();
                 default -> System.out.println("Invalid option.");
             }
         } else {
@@ -91,9 +95,20 @@ public class BankREPL {
                 case "4" -> transfer();
                 case "5" -> viewHistory();
                 case "6" -> logout();
+                case "7" -> changePin();
+                case "8" -> deleteAccount();
                 default -> System.out.println("Invalid option.");
             }
         }
+    }
+
+    private void help() {
+        System.out.println("""
+                Bank of CLI Help
+                ----------------
+                Register: create a new account with a 4-digit PIN.
+                Login: access an existing account with your account ID and PIN.
+                Exit: quit the application.""");
     }
 
     private void register() {
@@ -118,6 +133,25 @@ public class BankREPL {
 
     private void logout() {
         System.out.println("Logged out account " + currentAccount.getAccountId() + ".");
+        currentAccount = null;
+    }
+
+    private void changePin() {
+        System.out.print("Current PIN: ");
+        String currentPin = scanner.nextLine().trim();
+        System.out.print("New 4-digit PIN: ");
+        String newPin = scanner.nextLine().trim();
+
+        accountService.changePin(currentAccount.getAccountId(), currentPin, newPin);
+        System.out.println("PIN changed successfully.");
+    }
+
+    private void deleteAccount() {
+        System.out.print("Enter your PIN to confirm account deletion: ");
+        String pin = scanner.nextLine().trim();
+
+        accountService.deleteAccount(currentAccount.getAccountId(), pin);
+        System.out.println("Account deleted.");
         currentAccount = null;
     }
 

@@ -1,6 +1,7 @@
 package com.bankofcli.service;
 
 import com.bankofcli.domain.Account;
+import com.bankofcli.exception.AccountNotEmptyException;
 import com.bankofcli.exception.AccountNotFoundException;
 import com.bankofcli.exception.InvalidPinException;
 import com.bankofcli.persistence.AccountDAO;
@@ -49,6 +50,42 @@ public class AccountServiceImpl implements AccountService {
         BigDecimal balance = findAccountOrThrow(accountId).getBalance();
         logger.info("Balance retrieved for account {}", accountId);
         return balance;
+    }
+
+    @Override
+    public void changePin(long accountId, String currentPin, String newPin) {
+        Account account = findAccountOrThrow(accountId);
+
+        if (!account.getPin().equals(currentPin)) {
+            logger.error("Change PIN failed: incorrect current PIN for account {}", accountId);
+            throw new InvalidPinException("Incorrect PIN");
+        }
+
+        if (newPin == null || !newPin.matches("\\d{4}")) {
+            logger.error("Change PIN failed: new PIN must be exactly 4 digits for account {}", accountId);
+            throw new InvalidPinException("PIN must be exactly 4 digits");
+        }
+
+        accountDAO.updatePin(accountId, newPin);
+        logger.info("PIN changed successfully for account {}", accountId);
+    }
+
+    @Override
+    public void deleteAccount(long accountId, String pin) {
+        Account account = findAccountOrThrow(accountId);
+
+        if (!account.getPin().equals(pin)) {
+            logger.error("Delete account failed: incorrect PIN for account {}", accountId);
+            throw new InvalidPinException("Incorrect PIN");
+        }
+
+        if (account.getBalance().compareTo(BigDecimal.ZERO) != 0) {
+            logger.error("Delete account failed: balance not zero for account {}", accountId);
+            throw new AccountNotEmptyException("Account balance must be zero before it can be deleted");
+        }
+
+        accountDAO.deleteAccount(accountId);
+        logger.info("Account {} deleted successfully", accountId);
     }
 
     private Account findAccountOrThrow(long accountId) {

@@ -18,10 +18,10 @@ public class TransactionDAOImpl implements TransactionDAO {
     private static final String CREATE_TABLE_SQL = """
             CREATE TABLE IF NOT EXISTS transaction (
                 transaction_id SERIAL PRIMARY KEY,
-                account_id INTEGER NOT NULL REFERENCES account(account_id),
+                account_id INTEGER NOT NULL REFERENCES account(account_id) ON DELETE CASCADE,
                 type VARCHAR(20) NOT NULL,
                 amount NUMERIC(12, 2) NOT NULL,
-                related_account_id INTEGER REFERENCES account(account_id),
+                related_account_id INTEGER REFERENCES account(account_id) ON DELETE SET NULL,
                 timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             """;

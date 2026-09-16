@@ -1,6 +1,7 @@
 package com.bankofcli.service;
 
 import com.bankofcli.domain.Account;
+import com.bankofcli.exception.AccountNotEmptyException;
 import com.bankofcli.exception.AccountNotFoundException;
 import com.bankofcli.exception.InvalidPinException;
 import com.bankofcli.persistence.AccountDAO;
@@ -86,5 +87,42 @@ class AccountServiceImplTest {
     @Test
     void getBalance_nonExistentAccount_throwsAccountNotFoundException() {
         assertThrows(AccountNotFoundException.class, () -> accountService.getBalance(-1L));
+    }
+
+    @Test
+    void changePin_correctCurrentPinAndValidNewPin_updatesPin() {
+        Account created = accountService.register("1234");
+        createdAccountIds.add(created.getAccountId());
+
+        accountService.changePin(created.getAccountId(), "1234", "5678");
+
+        Account loggedIn = accountService.login(created.getAccountId(), "5678");
+        assertEquals(created.getAccountId(), loggedIn.getAccountId());
+    }
+
+    @Test
+    void changePin_incorrectCurrentPin_throwsInvalidPinException() {
+        Account created = accountService.register("1234");
+        createdAccountIds.add(created.getAccountId());
+
+        assertThrows(InvalidPinException.class, () -> accountService.changePin(created.getAccountId(), "0000", "5678"));
+    }
+
+    @Test
+    void deleteAccount_zeroBalanceAndCorrectPin_removesAccount() {
+        Account created = accountService.register("1234");
+
+        accountService.deleteAccount(created.getAccountId(), "1234");
+
+        assertThrows(AccountNotFoundException.class, () -> accountService.getBalance(created.getAccountId()));
+    }
+
+    @Test
+    void deleteAccount_nonZeroBalance_throwsAccountNotEmptyException() {
+        Account created = accountService.register("1234");
+        createdAccountIds.add(created.getAccountId());
+        accountDAO.depositFunds(created.getAccountId(), new BigDecimal("10.00"));
+
+        assertThrows(AccountNotEmptyException.class, () -> accountService.deleteAccount(created.getAccountId(), "1234"));
     }
 }

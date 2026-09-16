@@ -22,6 +22,8 @@ public class AccountDAOImpl implements AccountDAO {
     private static final String FIND_BY_ID_SQL = "SELECT account_id, pin, balance FROM account WHERE account_id = ?";
     private static final String DEPOSIT_SQL = "UPDATE account SET balance = balance + ? WHERE account_id = ?";
     private static final String WITHDRAW_SQL = "UPDATE account SET balance = balance - ? WHERE account_id = ? AND balance >= ?";
+    private static final String UPDATE_PIN_SQL = "UPDATE account SET pin = ? WHERE account_id = ?";
+    private static final String DELETE_SQL = "DELETE FROM account WHERE account_id = ?";
 
     public AccountDAOImpl() {
         initializeSchema();
@@ -99,6 +101,29 @@ public class AccountDAOImpl implements AccountDAO {
             return rowsAffected > 0;
         } catch (SQLException e) {
             throw databaseError("Could not withdraw funds", e);
+        }
+    }
+
+    @Override
+    public void updatePin(long accountId, String newPin) {
+        try (Connection connection = ConnectionFactory.getConnectionFactory().getConnection();
+                PreparedStatement statement = connection.prepareStatement(UPDATE_PIN_SQL)) {
+            statement.setString(1, newPin);
+            statement.setLong(2, accountId);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw databaseError("Could not update PIN", e);
+        }
+    }
+
+    @Override
+    public void deleteAccount(long accountId) {
+        try (Connection connection = ConnectionFactory.getConnectionFactory().getConnection();
+                PreparedStatement statement = connection.prepareStatement(DELETE_SQL)) {
+            statement.setLong(1, accountId);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw databaseError("Could not delete account", e);
         }
     }
 
