@@ -2,7 +2,7 @@ TRUNCATE transaction, account RESTART IDENTITY CASCADE;
 
 
 SELECT *
-FROM account
+FROM account;
 
 SELECT *
-FROM transaction
+FROM transaction;
